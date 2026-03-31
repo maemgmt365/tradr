@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TRADR</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .screen { display: none; }
+    .active { display: block; }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+    .correct { background: green; }
+    .incorrect { background: red; }
+  </style>
+</head>
+
+<body>
+
+<h1>TRADR</h1>
+<div id="stats"></div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <h2>Welcome Back</h2>
+  <button onclick="goTo('screen-map')">Start Training</button>
+</div>
+
+<!-- MAP -->
+<div id="screen-map" class="screen">
+  <h2>Strategy Map</h2>
+  <button onclick="startLesson()">ORB Breakout</button>
+</div>
+
+<!-- LESSON -->
+<div id="screen-lesson" class="screen">
+  <h2 id="question"></h2>
+  <div id="answers"></div>
+</div>
+
+<!-- FEEDBACK -->
+<div id="screen-feedback" class="screen">
+  <h2 id="feedback"></h2>
+  <p id="explanation"></p>
+  <button onclick="nextStep()">Continue</button>
+</div>
+
+<!-- COMPLETE -->
+<div id="screen-complete" class="screen">
+  <h2>Lesson Complete</h2>
+  <p>+25 XP</p>
+  <button onclick="goTo('screen-map')">Back to Map</button>
+</div>
+
+<script>
+
+// =====================
+// STATE + STORAGE
+// =====================
+
+let xp = parseInt(localStorage.getItem("xp")) || 0;
+let streak = parseInt(localStorage.getItem("streak")) || 0;
+let lastLogin = localStorage.getItem("lastLogin");
+
+let today = new Date().toDateString();
+
+if (lastLogin !== today) {
+  streak++;
+  localStorage.setItem("streak", streak);
+  localStorage.setItem("lastLogin", today);
+}
+
+updateStats();
+
+function updateStats() {
+  document.getElementById("stats").innerHTML =
+    "XP: " + xp + " | Streak: " + streak + "🔥";
+}
+
+function updateXP(amount) {
+  xp += amount;
+  localStorage.setItem("xp", xp);
+  updateStats();
+}
+
+// =====================
+// NAVIGATION
+// =====================
+
+function goTo(screen) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(screen).classList.add("active");
+}
+
+// =====================
+// LESSON DATA
+// =====================
+
+let currentStep = 0;
+
+const lesson = [
+  {
+    question: "Price breaks above ORB high. What do you do?",
+    options: ["Enter immediately", "Wait for confirmation"],
+    correct: 1,
+    explanation: "Patience wins. Wait for confirmation to avoid fakeouts."
+  },
+  {
+    question: "Volume is low on breakout. What does that mean?",
+    options: ["Strong breakout", "Weak breakout"],
+    correct: 1,
+    explanation: "Low volume = weak conviction. Be cautious."
+  }
+];
+
+// =====================
+// LESSON FLOW
+// =====================
+
+function startLesson() {
+  currentStep = 0;
+  loadQuestion();
+  goTo('screen-lesson');
+}
+
+function loadQuestion() {
+  let q = lesson[currentStep];
+  document.getElementById("question").innerText = q.question;
+
+  let answersDiv = document.getElementById("answers");
+  answersDiv.innerHTML = "";
+
+  q.options.forEach((opt, i) => {
+    let btn = document.createElement("button");
+    btn.innerText = opt;
+    btn.onclick = () => checkAnswer(i);
+    answersDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(choice) {
+  let q = lesson[currentStep];
+  let correct = choice === q.correct;
+
+  document.getElementById("feedback").innerText =
+    correct ? "Good Execution" : "Not Quite";
+
+  document.getElementById("explanation").innerText = q.explanation;
+
+  if (correct) updateXP(10);
+
+  goTo('screen-feedback');
+}
+
+function nextStep() {
+  currentStep++;
+
+  if (currentStep < lesson.length) {
+    loadQuestion();
+    goTo('screen-lesson');
+  } else {
+    updateXP(15);
+    goTo('screen-complete');
+  }
+}
+
+</script>
+
+</body>
+</html>
